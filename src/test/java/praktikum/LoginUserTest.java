@@ -1,16 +1,17 @@
 package praktikum;
 
 import io.qameta.allure.Description;
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class LoginUserTest {
+public class LoginUserTest extends BaseTest {
 
     private String email;
     private final String password = "password123";
@@ -21,7 +22,6 @@ public class LoginUserTest {
 
     @Before
     public void setUp() {
-        RestAssured.baseURI = "https://stellarburgers.education-services.ru";
         userApi = new UserApi();
 
         email = "login" + System.currentTimeMillis() + "@yandex.ru";
@@ -31,7 +31,7 @@ public class LoginUserTest {
         Response response = userApi.createUser(user);
 
         response.then()
-                .statusCode(200);
+                .statusCode(SC_OK);
 
         accessToken = response.path("accessToken");
     }
@@ -50,7 +50,7 @@ public class LoginUserTest {
 
         userApi.loginUser(user)
                 .then()
-                .statusCode(200)
+                .statusCode(SC_OK)
                 .body("success", equalTo(true))
                 .body("accessToken", notNullValue())
                 .body("refreshToken", notNullValue())
@@ -59,17 +59,33 @@ public class LoginUserTest {
     }
 
     @Test
-    @Description("Вход с неверным логином и паролем")
-    public void loginWithIncorrectCredentialsTest() {
+    @Description("Вход с неверным логином")
+    public void loginWithIncorrectEmailTest() {
         UserModel user = new UserModel(
                 "wrong" + System.currentTimeMillis() + "@yandex.ru",
+                password,
+                name
+        );
+
+        userApi.loginUser(user)
+                .then()
+                .statusCode(SC_UNAUTHORIZED)
+                .body("success", equalTo(false))
+                .body("message", equalTo("email or password are incorrect"));
+    }
+
+    @Test
+    @Description("Вход с неверным паролем")
+    public void loginWithIncorrectPasswordTest() {
+        UserModel user = new UserModel(
+                email,
                 "wrongPassword",
                 name
         );
 
         userApi.loginUser(user)
                 .then()
-                .statusCode(401)
+                .statusCode(SC_UNAUTHORIZED)
                 .body("success", equalTo(false))
                 .body("message", equalTo("email or password are incorrect"));
     }

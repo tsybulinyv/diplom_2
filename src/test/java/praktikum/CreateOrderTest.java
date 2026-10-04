@@ -1,18 +1,25 @@
 package praktikum;
+
 import io.qameta.allure.Description;
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import java.util.Arrays;
+
+import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class CreateOrderTest {
+public class CreateOrderTest extends BaseTest {
 
     private final String email =
             "order" + System.currentTimeMillis() + "@yandex.ru";
+
     private final String password = "password123";
     private final String name = "Order User";
 
@@ -31,9 +38,6 @@ public class CreateOrderTest {
 
     @Before
     public void setUp() {
-        RestAssured.baseURI =
-                "https://stellarburgers.education-services.ru";
-
         userApi = new UserApi();
         orderApi = new OrderApi();
 
@@ -42,7 +46,7 @@ public class CreateOrderTest {
         Response response = userApi.createUser(user);
 
         response.then()
-                .statusCode(200);
+                .statusCode(SC_OK);
 
         accessToken = response.path("accessToken");
     }
@@ -63,7 +67,7 @@ public class CreateOrderTest {
 
         orderApi.createOrder(order, accessToken)
                 .then()
-                .statusCode(200)
+                .statusCode(SC_OK)
                 .body("success", equalTo(true))
                 .body("order.number", notNullValue());
     }
@@ -77,7 +81,7 @@ public class CreateOrderTest {
 
         orderApi.createOrderWithoutAuthorization(order)
                 .then()
-                .statusCode(401)
+                .statusCode(SC_UNAUTHORIZED)
                 .body("success", equalTo(false))
                 .body("message", equalTo("You should be authorised"));
     }
@@ -91,7 +95,7 @@ public class CreateOrderTest {
 
         orderApi.createOrder(order, accessToken)
                 .then()
-                .statusCode(200)
+                .statusCode(SC_OK)
                 .body("success", equalTo(true))
                 .body("order.number", notNullValue());
     }
@@ -103,7 +107,7 @@ public class CreateOrderTest {
 
         orderApi.createOrder(order, accessToken)
                 .then()
-                .statusCode(400)
+                .statusCode(SC_BAD_REQUEST)
                 .body("success", equalTo(false))
                 .body("message", equalTo("Ingredient ids must be provided"));
     }
@@ -117,6 +121,6 @@ public class CreateOrderTest {
 
         orderApi.createOrder(order, accessToken)
                 .then()
-                .statusCode(500);
+                .statusCode(SC_INTERNAL_SERVER_ERROR);
     }
 }
